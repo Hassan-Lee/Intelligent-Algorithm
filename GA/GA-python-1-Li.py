@@ -102,14 +102,7 @@ class GA:
             self.best_fitness = self.fitness_value[self.population_size-1]
             self.best_generation = self.G
             self.best_individual = cp.deepcopy(self.population[self.population_size-1])
-            #q = 0
-            #for i in range(self.chromosome_size):
-            #    if self.best_individual[i] == 1:
-            #        q += 2 ** i
-            #self.best_point = self.left+(self.right-self.left)*q/(2**self.chromosome_size-1)
-            #print(self.best_fitness,self.best_individual,self.best_point)
-        print(self.fitness_value)
-        print(self.fitness_average)
+            
 
     def selection(self):
         """
