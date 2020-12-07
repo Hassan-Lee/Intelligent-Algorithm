@@ -1,13 +1,10 @@
 import math
-
 import numpy as np
 import matplotlib.pyplot as plt
 import copy as cp
 import random
 import time
 import pandas as pd
-from mycmp import mycmp
-import pysnooper
 
 
 
@@ -93,9 +90,9 @@ class GSA():
         @param xmax: x的上界
         """
         self.xmin = xmin
-        print('x的下界是'+str(xmin))
+        # print('x的下界是'+str(xmin))
         self.xmax = xmax
-        print('x的上界是'+str(xmax))
+        # print('x的上界是'+str(xmax))
 
     # @pysnooper.snoop(prefix="init_pop",output='F:/e/pycode/GSA.log')
     def init_pop(self):
@@ -104,10 +101,11 @@ class GSA():
         @return: 初始种群
         """
         pop1 = []
+        self.pop = int(self.pop)
         for i in range(self.pop):
             x_init = self.xmin + random.random() * (self.xmax - self.xmin)
             pop1.append(x_init)
-        print('初始的种群是'+str(pop1))
+        # print('初始的种群是'+str(pop1))
         return pop1
 
     # @pysnooper.snoop(prefix="judge",output='F:/e/pycode/GSA.log')
@@ -249,7 +247,6 @@ class GSA():
     # @pysnooper.snoop(prefix="main",output='F:/e/pycode/GSA.log')
     def main(self):
         pop1 = self.init_pop()
-
         while self.T > self.T_min:
             print('----------------当前迭代代数是' + str(self.cur_g) + '-------------------')
             new_pop = self.generate(pop1)
@@ -273,7 +270,7 @@ def run(func=Rastrigrin,T_max=10000,T_min=10,pop=100,new_pop=100,cur_g=1,p=0.9,t
     x_init = np.array([10, 10])  # 设置初始点（行向量）
     x_min = np.array([-10, -10])
     x_max = np.array([10, 10])
-    demo = GSA(func,T_max,T_min,pop,new_pop,cur_g,p,tour_n,shape)
+    demo = GSA(T_max,T_min,pop,new_pop,cur_g,p,tour_n,func,shape)
     demo.xrange(x_min, x_max)
     demo.main()
     end = time.time()  # 结束计时
@@ -301,7 +298,7 @@ T_min = [i/((0.7)**10) for i in T_max]
 pop = list(range(0,500,10))
 new_pop = list(range(0,500,10))
 p = [0.5,0.6,0.7,0.8,0.9,0.95]
-tour_n = [list(range(2,80,3))]
+tour_n = list(range(2,80,3))
 result = []
 for i in range(len(T_max)):
     T_max = T_max[i]
@@ -310,8 +307,9 @@ for i in range(len(T_max)):
         for k in new_pop:
             for l in p:
                 for m in tour_n:
-                    x_best,y_best = run(func=Rastrigrin, T_max=T_max, T_min=T_min, pop=j, new_pop=k, cur_g=1, p=l, tour_n=m, shape=2)
+                    x_best,y_best = run(T_max=T_max, T_min=T_min, pop=int(j), new_pop=int(k), cur_g=1, p=l, tour_n=int(m), func=Rastrigrin, shape=2)
                     result.append([y_best,T_max,T_min,j,k,l,m])
+
 output = open('/home/admin/data.xlsx','w')
 output.write('y_best\tT_max\tT_min\tpop\tnew_pop\tp\ttour_n\n')
 for i in range(len(result)):
