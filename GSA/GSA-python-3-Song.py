@@ -1,10 +1,6 @@
-import math
 import numpy as np
-import matplotlib.pyplot as plt
-import copy as cp
 import random
 import time
-import pandas as pd
 
 
 
@@ -66,8 +62,6 @@ class GSA():
         @param p: 锦标赛中的概率p
         @param tour_n: 一次锦标赛的选手数
         @param func: 函数
-        @param x_best: 最优点
-        @param y_best: 最优点的函数值
         @param shape: x的维度
         """
         self.T_max = T_max
@@ -80,8 +74,8 @@ class GSA():
         self.tour_n = tour_n
         self.func = func
         self.shape = 1
-        self.x_best = [0]*shape
-        self.y_best = 0
+        self.x_best = [1]*shape
+        self.y_best = 1111
 
     # @pysnooper.snoop(prefix="xrange",output='F:/e/pycode/GSA.log')
     def xrange(self, xmin: np.ndarray, xmax: np.ndarray):  # 输入x范围，尚未考虑多维情形
@@ -293,24 +287,27 @@ def run(func=Rastrigrin,T_max=10000,T_min=10,pop=100,new_pop=100,cur_g=1,p=0.9,t
 # print("Duration time: %0.3f" % (end - start))  # 打印运行时间
 
 # 手动网格搜索调参
-T_max = list(range(0,1001,100))
-T_min = [i/((0.7)**10) for i in T_max]
+T_max = [1,100,200,300,400,500,600,700,800,900,1000]
+T_min = []
+for i in range(len(T_max)):
+    tmin = T_max[i]/((0.7)**10)
+    T_min.append(tmin)
 pop = list(range(0,500,10))
 new_pop = list(range(0,500,10))
 p = [0.5,0.6,0.7,0.8,0.9,0.95]
 tour_n = list(range(2,80,3))
 result = []
 for i in range(len(T_max)):
-    T_max = T_max[i]
-    T_min = T_min[i]
+    tmax = T_max[i]
+    tmin = T_min[i]
     for j in pop:
         for k in new_pop:
             for l in p:
                 for m in tour_n:
-                    x_best,y_best = run(T_max=T_max, T_min=T_min, pop=int(j), new_pop=int(k), cur_g=1, p=l, tour_n=int(m), func=Rastrigrin, shape=2)
-                    result.append([y_best,T_max,T_min,j,k,l,m])
+                    x_best,y_best = run(T_max=tmax, T_min=tmin, pop=int(j), new_pop=int(k), cur_g=1, p=l, tour_n=int(m), func=Rastrigrin, shape=2)
+                    result.append([y_best,tmax,tmin,j,k,l,m])
 
-output = open('/home/admin/data.xlsx','w')
+output = open('/home/admin/Intelligent-Algorithm/GSA/data.xlsx','w')
 output.write('y_best\tT_max\tT_min\tpop\tnew_pop\tp\ttour_n\n')
 for i in range(len(result)):
     for j in range(len(result[i])):
