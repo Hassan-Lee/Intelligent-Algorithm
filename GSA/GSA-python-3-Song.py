@@ -133,6 +133,16 @@ class GSA():
 
         return x_new
 
+    # def fitness_trans(self, x0):
+    #     """
+    #     对原函数进行复合嵌套,构造适应度函数
+    #     :param x0:
+    #     :return:
+    #     """
+    #     left = self.xmin
+    #     right = self.xmax
+    #     return (x0 - left + 1) / (right - left + 1)
+
     def selection(self, x):
         # 计算每个个体的适应度值，并按照轮盘赌的方法挑选出N个，且适应度值最大的个体必须在其中
 
@@ -145,15 +155,16 @@ class GSA():
         self.y_best = y_cur[best_index]
         fitness = [self.y_best - self.func(xx) for xx in x_cur]
 
-        fitness_sum = [0] * self.pop
-        for i in range(self.pop):
+        fitness_sum = [0] * len(x)
+        for i in range(len(x)):
             if i == 0:
-                fitness_sum[i] = fitness_sum[i] + fitness[i]
+                fitness_sum[i] = fitness[i]
             else:
                 fitness_sum[i] = fitness_sum[i - 1] + fitness[i]
 
+
         for i in range(self.pop):
-            r = np.random.random() * fitness_sum[self.pop - 1]
+            r = np.random.random() * fitness_sum[-1]
             first = 0
             last = self.pop
             mid = round((first + last) / 2)  # mid是种群数/2的那个位置
@@ -173,7 +184,7 @@ class GSA():
                     break
             x_new[i] = x_cur[idx]
 
-        p = self.new_pop - 1
+        p = self.pop - 1
         for i in range(p):
             survive.append(x_new[i])
         survive.append(self.x_best)
@@ -255,13 +266,13 @@ class GSA():
             self.y_best = sur_pop_y[best_index]
 
 
+
     # def disp(self):
 
 
 
 def run(func=Rastrigrin,T_max=10000,T_min=10,pop=100,new_pop=100,cur_g=1,p=0.9,tour_n=5,shape=2):
     start = time.time()  # 开始计时
-    x_init = np.array([10, 10])  # 设置初始点（行向量）
     x_min = np.array([-10, -10])
     x_max = np.array([10, 10])
     demo = GSA(T_max,T_min,pop,new_pop,cur_g,p,tour_n,func,shape)
@@ -292,22 +303,25 @@ T_min = []
 for i in range(len(T_max)):
     tmin = T_max[i]/((0.7)**10)
     T_min.append(tmin)
-pop = list(range(0,500,10))
-new_pop = list(range(0,500,10))
+pop = [10,30,50,80,100]
+new_pop = [30,50,80,100]
 p = [0.5,0.6,0.7,0.8,0.9,0.95]
-tour_n = list(range(2,80,3))
+tour_n = [2,5,10,25]
 result = []
-for i in range(len(T_max)):
-    tmax = T_max[i]
-    tmin = T_min[i]
-    for j in pop:
-        for k in new_pop:
-            for l in p:
-                for m in tour_n:
-                    x_best,y_best = run(T_max=tmax, T_min=tmin, pop=int(j), new_pop=int(k), cur_g=1, p=l, tour_n=int(m), func=Rastrigrin, shape=2)
-                    result.append([y_best,tmax,tmin,j,k,l,m])
+for i in T_max:
+    for ii in T_min:
+        print('当前最高温是'+str(i))
+        print('要达到最低温是'+str(ii))
+        for j in pop:
+            for k in new_pop:
+                for l in p:
+                    for m in tour_n:
+                        for iter in range(100):
+                            # 每个参数下迭代100次
+                            x_best,y_best = run(T_max=i, T_min=ii, pop=int(j), new_pop=int(k), cur_g=1, p=l, tour_n=int(m), func=Rastrigrin, shape=2)
+                            result.append([y_best,i,ii,j,k,l,m])
 
-output = open('/home/admin/Intelligent-Algorithm/GSA/data.xlsx','w')
+output = open('F:/e/数学/优化方法/Intelligent-Algorithm/GSA/data.xlsx','w')
 output.write('y_best\tT_max\tT_min\tpop\tnew_pop\tp\ttour_n\n')
 for i in range(len(result)):
     for j in range(len(result[i])):
