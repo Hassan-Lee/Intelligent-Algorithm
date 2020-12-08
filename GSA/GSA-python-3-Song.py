@@ -321,7 +321,7 @@ for i in T_max:
                             x_best,y_best = run(T_max=i, T_min=ii, pop=int(j), new_pop=int(k), cur_g=1, p=l, tour_n=int(m), func=Rastrigrin, shape=2)
                             result.append([y_best,i,ii,j,k,l,m])
 
-output = open('F:/e/数学/优化方法/Intelligent-Algorithm/GSA/data.xlsx','w')
+output = open('/home/admin/Intelligent-Algorithm/GSA/data.xlsx','w')
 output.write('y_best\tT_max\tT_min\tpop\tnew_pop\tp\ttour_n\n')
 for i in range(len(result)):
     for j in range(len(result[i])):
