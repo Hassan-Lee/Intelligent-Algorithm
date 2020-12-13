@@ -3,52 +3,31 @@ import random
 import time
 import matplotlib.pyplot as plt
 
+
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 
-# 二维目标函数
-
-def Rastrigrin(x: np.ndarray):
-    return 20 + x[0] ** 2 - 10 * np.cos(2 * np.pi * x[0]) + x[1] ** 2 - 10 * np.cos(2 * np.pi * x[1])
-
-def obj_fun(x: np.ndarray):
-    return abs(0.2 * x[0]) + 10 * np.sin(5 * x[0]) + 7 * np.cos(4 * x[0])
+def fun1(x:np.ndarray):
+    # 一维
+    return abs(0.2 * x) + 10 * np.sin(5 * x) + 7 * np.cos(4 * x)
 
 
-def obj_fun2(x: np.ndarray):
-    return (1 - x[0]) ** 2 + 100 * (x[0] - x[1] ** 2) ** 2
+def Griewangk(x:np.ndarray):
+    # 任意维
+    sum2 = 1
+    for i in range(x.shape[0]):
+        a = np.cos(x[i] / np.sqrt(i + 1))
+        sum2 = sum2 * a
+    return 1 + sum(x ** 2) / 4000 - sum2
 
 
-def Easom(x: np.ndarray):
-    return -1 * np.cos(x[0]) * np.cos(x[1]) * np.exp(-1 * (x[0] - np.pi) ** 2 - (x[0] - np.pi) ** 2)
-
-
-def obj_fun_test1(x: np.ndarray):
-    return -1 * (10 + np.sin(1 / x) / ((x - 0.16) ** 2 + 0.1))
-
-
-def Bohachevsky(x: np.ndarray):
-    return x[0] ** 2 + x[1] ** 2 - 0.3 * np.cos(3 * np.pi * x[0]) + 0.3 * np.cos(4 * np.pi * x[1]) + 0.3
-
-
-
-def Schaffersf6(x: np.ndarray):
-    return 0.5 + (np.sin(x[0] ** 2 + x[1] ** 2) ** 2 - 0.5) / (1 + 0.001 * (x[0] ** 2 + x[1] ** 2) ** 2) ** 2
-
-
-def Shubert(x: np.ndarray):
-    s1 = 0
-    s2 = 0
-    for i in range(1, 6):
-        s1 += i * np.cos((i + 1) * x[0] + i)
-        s2 += i * np.cos((i + 1) * x[1] + i)
-    return s1 + s2
-
-# 一维目标函数
-def fun1(x):
-    return -(x + 10 * np.sin(5 * x) + 7 * np.cos(4 * x))
+def Rastrigrin(x:np.ndarray):
+    # 任意维
+    return 10 * x.shape[0] + sum(x ** 2 - 10 * np.cos(2 * np.pi * x))
 
 class GSA():
+
+
     def __init__(self,T_max=400,T_min=10,pop=10,new_pop=10,cur_g=1,p=0.9,tour_n=10,func=fun1,shape=1, **kwargs):
         """
         @param T_max: 最大温度
@@ -88,11 +67,16 @@ class GSA():
         self.xmax = xmax
         print('x的上界是'+str(xmax))
 
+
+
     def init_pop(self):
         pop1 = []
-        x_init = [10,10]
         for i in range(self.pop):
-            pop1.append(self.fast_get(x_init))
+            self.x_init = self.xmin + random.random() * (self.xmax - self.xmin)
+            pop1.append(np.array(self.x_init))
+        # x_init = [1]*self.shape
+        # for i in range(self.pop):
+        #     pop1.append(self.fast_get(x_init))
         return pop1
 
     def judge(self, df):
@@ -121,6 +105,7 @@ class GSA():
                 xnew = self.fast_get(old_pop[i])
 
                 # Metropolis准则
+                # print('old_pop[i]是'+str(old_pop[i]))
                 df = self.func(xnew) - self.func(old_pop[i])  # 计算函数值差值
                 if self.judge(df):
                     x_new.append(xnew)
@@ -178,12 +163,29 @@ class GSA():
     def cool(self):
         # fast:
         self.T = self.T_max * np.exp(-self.c * (self.cur_g * 10) ** self.quench)
-        # self.T = self.T * 0.7
         self.T_history.append(self.T)
 
     def disp(self):
         if self.shape == 1:
-            pass
+            fig = plt.figure()
+            ax = fig.add_subplot(1, 1, 1)
+            x_min, x_max = min(min(row) for row in self.x_history), max(max(row) for row in self.x_history)
+            x = np.arange(x_min, x_max, 0.001)
+            y = np.zeros(shape=x.shape)
+            for index in range(x.shape[0]):
+                y[index] = self.func(np.array([x[index]]))
+            plt.plot(x, y)
+            for i in range(len(self.x_history)):
+                # 对每一代
+                x, t = self.x_history[i], self.T_history[i]
+                y = [self.func(xx) for xx in x]
+                plt.title("当前温度 ："+str(t))
+                p = ax.scatter(x, y, marker='o')
+                plt.pause(0.5)
+                if i != len(self.x_history) - 1:
+                    p.remove()
+
+            plt.show()
 
         elif self.shape == 2:
             fig = plt.figure()
@@ -204,7 +206,7 @@ class GSA():
 
             for i in range(len(self.x_history)):
                 x0, x1, t = x0_list[i], x1_list[i], self.T_history[i]
-                print(x0)
+                # print(x0)
                 y = [self.func(x) for x in self.x_history[i]]
                 plt.title("当前温度 ："+str(t))
                 p = ax.scatter(x0, x1, y, c='b')
@@ -215,12 +217,13 @@ class GSA():
             plt.xlabel("x0")
             plt.ylabel("x1")
             plt.show()
+        else:
+            pass
 
     def main(self):
         pop1 = self.init_pop()
         self.x_history.append(pop1)
         while self.T > self.T_min:
-
             print('----------------当前迭代代数是' + str(self.cur_g) + '-------------------')
             new_pop = self.generate(pop1)
             pop1 = self.tournament(new_pop)
@@ -237,12 +240,18 @@ class GSA():
 
 
 
+
 if __name__ == "__main__":
     start = time.time()  # 开始计时
-    x_init = np.array([10, 10])  # 设置初始点（行向量）
-    x_min = np.array([-10, -10])
-    x_max = np.array([10, 10])
-    demo = GSA(func=Rastrigrin,T_max=1,T_min=1e-5,pop=30,new_pop=15,cur_g=1,p=0.9,tour_n=15,shape=2)
+    # x_min = np.array(-4)
+    # x_max = np.array(4)
+    # demo = GSA(func=fun1,T_max=1,T_min=1e-5,pop=30,new_pop=15,cur_g=1,p=0.9,tour_n=15,shape=1)
+    # x_min = np.array([-10,-10])
+    # x_max = np.array([10,10])
+    # demo = GSA(func=Rastrigrin, T_max=1, T_min=1e-5, pop=30, new_pop=15, cur_g=1, p=0.9, tour_n=15, shape=2)
+    x_min = np.array([-5, -5])
+    x_max = np.array([5, 5])
+    demo = GSA(func=Griewangk, T_max=1, T_min=1e-5, pop=30, new_pop=15, cur_g=1, p=0.9, tour_n=15, shape=2)
     demo.xrange(x_min, x_max)
     demo.main()
     demo.disp()
@@ -251,7 +260,3 @@ if __name__ == "__main__":
     print('iterations:' + str(demo.cur_g))
     print('x_best:'+str(demo.x_best))
     print('y_best:'+str(demo.y_best))
-
-
-
-

@@ -92,7 +92,7 @@ class GSA():
         pop1 = []
         x_init = [10,10]
         for i in range(self.pop):
-            pop1.append(self.fast_get(x_init))
+            pop1.append(self.get_new(x_init))
         return pop1
 
     def judge(self, df):
@@ -106,10 +106,9 @@ class GSA():
             else:
                 return False
 
-    def fast_get(self,x):
-        r = np.random.uniform(-1, 1, size=self.shape)
-        xc = np.sign(r) * self.T * ((1 + 1.0 / self.T) ** np.abs(r) - 1.0)
-        x_new = x + xc * (self.upper - self.lower)
+    def get_new(self,x):
+        u = np.random.uniform(-1, 1, size=self.shape)  # 产生均匀分布的[Xi,……] u ~ Uniform(0, 1, size = d)
+        x_new = x + 20 * np.sign(u) * self.T * ((1 + 1.0 / self.T) ** np.abs(u) - 1.0)
         return x_new
 
 
@@ -118,7 +117,7 @@ class GSA():
 
         for i in range(len(old_pop)):
             while len(x_new) < (i+1)*self.new_pop:
-                xnew = self.fast_get(old_pop[i])
+                xnew = self.get_new(old_pop[i])
 
                 # Metropolis准则
                 df = self.func(xnew) - self.func(old_pop[i])  # 计算函数值差值
@@ -168,17 +167,13 @@ class GSA():
                 selected_indices.append(winner)
             selected_indices = list(set(selected_indices))
 
-
-
         for i in range(len(selected_indices)):
             survive.append(x_cur[selected_indices[i]])
 
         return survive
 
     def cool(self):
-        # fast:
-        self.T = self.T_max * np.exp(-self.c * (self.cur_g * 10) ** self.quench)
-        # self.T = self.T * 0.7
+        self.T = self.T * 0.7
         self.T_history.append(self.T)
 
     def disp(self):
@@ -211,7 +206,7 @@ class GSA():
                 plt.pause(0.5)
                 if i != len(self.x_history) - 1:
                     p.remove()
-
+            plt.scatter(self.x_best[0], self.x_best[1], self.y_best, c='r', marker='*')
             plt.xlabel("x0")
             plt.ylabel("x1")
             plt.show()
@@ -235,14 +230,66 @@ class GSA():
             self.y_best = sur_pop_y[best_index]
 
 
+class fastGSA(GSA):
+    def __init__(self, T_max=400, T_min=10, pop=10, new_pop=10, cur_g=1, p=0.9, tour_n=10, func=fun1, shape=1, **kwargs):
+        super().__init__(T_max, T_min, pop, new_pop, cur_g, p, tour_n, func, shape, **kwargs)
+        self.name = 'SAFast'
+        self.m, self.n, self.quench = kwargs.get('m', 1), kwargs.get('n', 1), kwargs.get('quench', 1)
+        self.lower, self.upper = kwargs.get('lower', -10), kwargs.get('upper', 10)
+        self.c = self.m * np.exp(-self.n * self.quench)
 
+    def get_new(self, x):
+        r = np.random.uniform(-1, 1, size=self.shape)
+        xc = np.sign(r) * self.T * ((1 + 1.0 / self.T) ** np.abs(r) - 1.0)
+        x_new = x + xc * (self.upper - self.lower)
+        return x_new
+
+    def cool(self):
+        self.T = self.T_max * np.exp(-self.c * (self.cur_g * 10) ** self.quench)
+        self.T_history.append(self.T)
+
+class cauchyGSA(GSA):
+    def __init__(self, T_max=400, T_min=10, pop=10, new_pop=10, cur_g=1, p=0.9, tour_n=10, func=fun1, shape=1, **kwargs):
+        super().__init__(T_max, T_min, pop, new_pop, cur_g, p, tour_n, func, shape, **kwargs)
+        self.name = 'SACauchy'
+        self.learn_rate = kwargs.get('learn_rate', 0.5)
+
+    def get_new_x(self, x):
+        u = np.random.uniform(-np.pi / 2, np.pi / 2, size=self.shape)
+        xc = self.learn_rate * self.T * np.tan(u)
+        x_new = x + xc
+        return x_new
+
+    def cool_down(self):
+        self.T = self.T * 0.7
+        self.T_history.append(self.T)
+
+class BoltzmannGSA(GSA):
+    def __init__(self, T_max=400, T_min=10, pop=10, new_pop=10, cur_g=1, p=0.9, tour_n=10, func=fun1, shape=1, **kwargs):
+        super().__init__(T_max, T_min, pop, new_pop, cur_g, p, tour_n, func, shape, **kwargs)
+        self.name = 'SABoltzmann'
+        self.lower, self.upper = kwargs.get('lower', -10), kwargs.get('upper', 10)
+        self.learn_rate = kwargs.get('learn_rate', 0.5)
+
+    def get_new_x(self, x):
+        std = min(np.sqrt(self.T), (self.upper - self.lower) / 3.0 / self.learn_rate) * np.ones(self.shape)
+        xc = np.random.normal(0, 1.0, size=self.shape)
+        x_new = x + xc * std * self.learn_rate
+        return x_new
+
+    def cool_down(self):
+        self.T = self.T * 0.7
+        self.T_history.append(self.T)
 
 if __name__ == "__main__":
     start = time.time()  # 开始计时
     x_init = np.array([10, 10])  # 设置初始点（行向量）
     x_min = np.array([-10, -10])
     x_max = np.array([10, 10])
-    demo = GSA(func=Rastrigrin,T_max=1,T_min=1e-5,pop=30,new_pop=15,cur_g=1,p=0.9,tour_n=15,shape=2)
+    # demo = GSA(func=Rastrigrin,T_max=1000,T_min=10,pop=30,new_pop=15,cur_g=1,p=0.9,tour_n=15,shape=2)
+    demo = fastGSA(func=Rastrigrin, T_max=1, T_min=1e-5, pop=30, new_pop=15, cur_g=1, p=0.9, tour_n=15, shape=2)
+    # demo = cauchyGSA(func=Rastrigrin, T_max=1000, T_min=100, pop=30, new_pop=15, cur_g=1, p=0.9, tour_n=15, shape=2)
+    # demo = BoltzmannGSA(func=Rastrigrin, T_max=1000, T_min=1, pop=30, new_pop=15, cur_g=1, p=0.9, tour_n=15, shape=2)
     demo.xrange(x_min, x_max)
     demo.main()
     demo.disp()
@@ -251,7 +298,3 @@ if __name__ == "__main__":
     print('iterations:' + str(demo.cur_g))
     print('x_best:'+str(demo.x_best))
     print('y_best:'+str(demo.y_best))
-
-
-
-
