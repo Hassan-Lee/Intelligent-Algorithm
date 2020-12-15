@@ -11,10 +11,6 @@ def fun1(x:np.ndarray):
     # 一维
     return abs(0.2 * x) + 10 * np.sin(5 * x) + 7 * np.cos(4 * x)
 
-def fun2(x:np.ndarray):
-    # 一维
-    return 0.1 * x ** 2 - np.cos( 2 * np.pi * x) + 1
-
 
 def Griewangk(x:np.ndarray):
     # 任意维
@@ -63,8 +59,6 @@ class GSA():
         self.m, self.n, self.quench = kwargs.get('m', 1), kwargs.get('n', 1), kwargs.get('quench', 1)
         self.lower, self.upper = kwargs.get('lower', -10), kwargs.get('upper', 10)
         self.c = self.m * np.exp(-self.n * self.quench)
-        self.y_best_history = []
-
 
 
     def xrange(self, xmin: np.ndarray, xmax: np.ndarray):  # 输入x范围，尚未考虑多维情形
@@ -78,7 +72,7 @@ class GSA():
     def init_pop(self):
         pop1 = []
         for i in range(self.pop):
-            self.x_init = self.xmin + np.random.uniform(0,1,self.shape) * (self.xmax - self.xmin)
+            self.x_init = self.xmin + random.random() * (self.xmax - self.xmin)
             pop1.append(np.array(self.x_init))
         # x_init = [1]*self.shape
         # for i in range(self.pop):
@@ -171,31 +165,25 @@ class GSA():
         self.T = self.T_max * np.exp(-self.c * (self.cur_g * 10) ** self.quench)
         self.T_history.append(self.T)
 
-    def isclose(self, a, b, rel_tol=1e-09, abs_tol=1e-30):
-        return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-
     def disp(self):
         if self.shape == 1:
             fig = plt.figure()
             ax = fig.add_subplot(1, 1, 1)
+            x_min, x_max = min(min(row) for row in self.x_history), max(max(row) for row in self.x_history)
+            x = np.arange(x_min, x_max, 0.001)
+            y = np.zeros(shape=x.shape)
+            for index in range(x.shape[0]):
+                y[index] = self.func(np.array([x[index]]))
+            plt.plot(x, y)
             for i in range(len(self.x_history)):
-                ax.cla()
-                xmin, xmax = min(self.x_history[i]), max(self.x_history[i])
-                x = np.arange(xmin, xmax, xmax/10000)
-                y = np.zeros(shape=x.shape)
-                for index in range(x.shape[0]):
-                    y[index] = self.func(np.array([x[index]]))
-                plt.plot(x, y,c='black')
                 # 对每一代
                 x, t = self.x_history[i], self.T_history[i]
                 y = [self.func(xx) for xx in x]
-                p = ax.scatter(x, y, marker='o',c='b')
-                plt.title("当前温度 ：" + str(t) + '\n' + 'x_best:' + str(min(x)) + '\ny_best:' + str(self.func(min(x))))
+                plt.title("当前温度 ："+str(t))
+                p = ax.scatter(x, y, marker='o')
                 plt.pause(0.5)
                 if i != len(self.x_history) - 1:
                     p.remove()
-                else:
-                    p = ax.scatter(self.x_best, self.y_best, c='r', marker='*',s=100)
 
             plt.show()
 
@@ -208,27 +196,23 @@ class GSA():
                 for j in range(len(self.x_history[i])):
                     x0_list[i][j] = self.x_history[i][j][0]
                     x1_list[i][j] = self.x_history[i][j][1]
+            x_min, x_max = min(min(row) for row in x0_list), max(max(row) for row in x0_list)
+            y_min, y_max = min(min(row) for row in x1_list), max(max(row) for row in x1_list)
+            x = np.arange(x_min, x_max, 0.01)
+            y = np.arange(y_min, y_max, 0.01)
+            X, Y = np.meshgrid(x, y)
+            Z = self.func(np.array([X, Y]))
+            ax.plot_surface(X, Y, Z, cmap='Blues', alpha=0.3)
 
             for i in range(len(self.x_history)):
-                ax.cla()
-                x0 = [x[0] for x in self.x_history[i]]
-                x1 = [x[1] for x in self.x_history[i]]
-                x_min, x_max = min(x0), max(x0)
-                y_min, y_max = min(x1), max(x1)
-                x = np.arange(x_min, x_max, x_max/100)
-                y = np.arange(y_min, y_max, x_max/100)
-                X, Y = np.meshgrid(x, y)
-                Z = self.func(np.array([X, Y]))
-                ax.plot_surface(X, Y, Z, cmap='Blues', alpha=0.3)
                 x0, x1, t = x0_list[i], x1_list[i], self.T_history[i]
+                # print(x0)
                 y = [self.func(x) for x in self.x_history[i]]
-                plt.title("当前温度 ："+str(t)+'\n'+'x_best:'+str([x_min,y_min])+'\ny_best:'+str(self.func(np.array([x_min,y_min]))))
+                plt.title("当前温度 ："+str(t))
                 p = ax.scatter(x0, x1, y, c='b')
-                plt.pause(0.7)
+                plt.pause(0.5)
                 if i != len(self.x_history) - 1:
                     p.remove()
-                else:
-                    p = ax.scatter(self.x_best[0], self.x_best[1], self.y_best, c='r', marker='*',s=100)
 
             plt.xlabel("x0")
             plt.ylabel("x1")
@@ -247,47 +231,57 @@ class GSA():
             self.cool()
             print('当前温度'+str(self.T))
             self.cur_g = self.cur_g + 1
-            sur_pop_y = [self.func(xx) for xx in pop1]
-            if len(self.y_best_history) >= 2 and self.isclose(sur_pop_y[-1], sur_pop_y[-2]):
-                best_index = sur_pop_y.index(min(sur_pop_y))
-                self.x_best = pop1[best_index]
-                self.y_best = sur_pop_y[best_index]
-                self.y_best_history.append(self.y_best)
-                break
 
+            sur_pop_y = [self.func(xx) for xx in pop1]
             best_index = sur_pop_y.index(min(sur_pop_y))
             self.x_best = pop1[best_index]
             self.y_best = sur_pop_y[best_index]
-            self.y_best_history.append(self.y_best)
 
 
 
-if __name__ == "__main__":
+def run(func=Griewangk, T_max=1, T_min=1e-5, pop=30, new_pop=15, cur_g=1, p=0.9, tour_n=15, shape=2):
     start = time.time()  # 开始计时
-    #
-    # x_min = np.array(-5)
-    # x_max = np.array(5)
-    # demo = GSA(func=fun2, T_max=1, T_min=1e-15, pop=50, new_pop=30, cur_g=1, p=0.9, tour_n=2, shape=1)
-    #
-    # x_min = np.array([-10,-10])
-    # x_max = np.array([10,10])
-    # demo = GSA(func=Rastrigrin, T_max=1, T_min=1e-20, pop=30, new_pop=30, cur_g=1, p=0.9, tour_n=2, shape=2)
-    #
-    x_min = np.array([-5, -5])
-    x_max = np.array([5, 5])
-    demo = GSA(func=Griewangk, T_max=1, T_min=1e-25, pop=30, new_pop=30, cur_g=1, p=0.9, tour_n=5, shape=2)
-
-    #
     # x_min = np.array(-4)
     # x_max = np.array(4)
-    # demo = GSA(func=fun1,T_max=1,T_min=1e-15,pop=50,new_pop=30,cur_g=1,p=0.9,tour_n=2,shape=1)
-
+    # demo = GSA(func=fun1,T_max=1,T_min=1e-5,pop=30,new_pop=15,cur_g=1,p=0.9,tour_n=15,shape=1)
+    # x_min = np.array([-10,-10])
+    # x_max = np.array([10,10])
+    # demo = GSA(func=Rastrigrin, T_max=1, T_min=1e-5, pop=30, new_pop=15, cur_g=1, p=0.9, tour_n=15, shape=2)
+    x_min = np.array([-5, -5])
+    x_max = np.array([5, 5])
+    demo = GSA(func=func, T_max=T_max, T_min=T_min, pop=pop, new_pop=new_pop, cur_g=cur_g, p=p, tour_n=tour_n, shape=shape)
     demo.xrange(x_min, x_max)
     demo.main()
-    demo.disp()
+    # demo.disp()
     end = time.time()  # 结束计时
     print("Duration time: %0.3f" % (end - start))  # 打印运行时间
     print('iterations:' + str(demo.cur_g))
     print('x_best:'+str(demo.x_best))
     print('y_best:'+str(demo.y_best))
 
+    return demo.x_best, demo.y_best
+
+# 针对Griewangk的调参
+T_max = [1,10,100]
+T_min = [1e-3,1e-5,1e-7]
+pops = [10,30,50]
+new_pops = [10,20,30,40,50]
+ps = [0.7,0.8,0.9]
+tour_ns = [2,5,10,15]
+result = []
+for pop in pops:
+    for new in new_pops:
+        for p in ps:
+            for tour_n in tour_ns:
+                for iter in range(10):
+                    x_best, y_best= run(func=Griewangk, T_max=1, T_min=1e-5, pop=pop, new_pop=new, cur_g=1, p=p, tour_n=tour_n, shape=2)
+                    result.append([y_best,1,1e-5,pop,new,p,tour_n,iter])
+
+output = open('F:/e/数学/优化方法/Intelligent-Algorithm/GSA/data.xlsx','w')
+output.write('y_best\tT_max\tT_min\tpop\tnew_pop\tp\ttour_n\titer\n')
+for i in range(len(result)):
+    for j in range(len(result[i])):
+        output.write(str(result[i][j]))  #write函数不能写int类型的参数，所以使用str()转化
+        output.write('\t')  #相当于Tab一下，换一个单元格
+    output.write('\n')    #写完一行立马换行
+output.close()

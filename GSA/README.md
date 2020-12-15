@@ -23,4 +23,5 @@
 + GSA-python-4-Song.py:for循环调参，但这个文件中选择生存集的方法错误，因此调的参意义也不大。
 + GSA-python-5-Song.py:
 + GSA-python-6-Song.py:一个父类和三个子类（以Rastrigrin为例）。效果最好的是fastGSA。
-+ GSA-python-7-Song.py:三个函数的数值实验（未调参）。直接运行是Griewangk的，如果要运行其他函数，只需要注释Griewangk的三行代码，取消其他函数的三行代码的注释即可。
++ 【GSA-python-7-Song.py】:四个函数的数值实验。为了好看点，锦标赛选手数是2，迭代次数会比较多。如果把锦标赛选手数增加，只需要几次就可以收敛。直接运行是Griewangk的，如果要运行其他函数，只需要注释Griewangk的三行代码，取消其他函数的三行代码的注释即可。
++ GSA-python-8-Song.py:针对Griewangk的调参，将结果输出到excel表中（但最后的结果显示我选取的那几个参数没有太大区别
