@@ -178,9 +178,7 @@ class GA:
         for i in range(0, self.population_size, 2):
             for j in range(self.mode):
                 cross_position = int(round(np.random.random() * (self.chromosome_size // self.mode)))
-                # print(cross_position,np.random.random() * (self.chromosome_size // self.mode))
                 if cross_position < self.chromosome_size // self.mode or cross_position > self.chromosome_size // self.mode:
-                    # print(cross_position,(j + 1) * self.chromosome_size // self.mode)
                     for k in range(cross_position, (j + 1) * self.chromosome_size // self.mode):
                         temp = cp.deepcopy(self.population[i + 1][k])
                         self.population[i + 1][k] = self.population[i][k]
